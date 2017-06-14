@@ -1,0 +1,223 @@
+#include<reg52.h>
+
+#define uchar unsigned char 
+#define uint unsigned int 
+
+uchar m,n;
+uchar code leddata[]={ 
+ 
+                0x3F,  //"0"
+                0x06,  //"1"
+                0x5B,  //"2"
+                0x4F,  //"3"
+                0x66,  //"4"
+                0x6D,  //"5"
+                0x7D,  //"6"
+                0x07,  //"7"
+                0x7F,  //"8"
+                0x6F,  //"9"
+                0x77,  //"A"
+                0x7C,  //"B"
+                0x39,  //"C"
+                0x5E,  //"D"
+                0x79,  //"E"
+                0x71,  //"F"
+                0x76,  //"H"
+                0x38,  //"L"
+                0x37,  //"n"
+                0x3E,  //"u"
+                0x73,  //"P"
+                0x5C,  //"o"
+                0x40,  //"-"
+                0x00,  //熄灭
+                0x00  //自定义
+ 
+                         };
+
+delay_ms(uchar a)
+{
+   uchar i,j;
+   for(i=0;i<a;i++)
+   {
+     for(j=0;j<114;j++);
+   }
+}
+
+
+
+/*三角波*/
+void sanjiao()
+{
+   uchar i;
+   for(i=0;i<m;i++)
+   {
+	  P0=i;
+	  delay_ms(1);
+   }
+   for(i=m;i>0;i--)
+   {
+	  P0=i;
+	  delay_ms(1);
+   }
+}
+
+/*锯齿波*/
+void serrate()
+{
+   uchar i;
+   for(i=0;i<m;i++)
+   {
+	  P0=i;
+	  delay_ms(1);
+   }
+
+}
+
+/*方波*/
+void fangbo()
+{
+   P0=m;
+   delay_ms(80);
+   P0=0;
+   delay_ms(80);
+}
+
+/*梯形波*/
+void tixing()
+{
+	uchar i;
+   for(i=0;i<m;i++)
+   {
+	  P0=i;
+	  delay_ms(1);
+   }
+   P0=m;
+   delay_ms(80);
+   for(i=m;i>0;i--)
+   {
+	  P0=i;
+	  delay_ms(1);
+   }
+   P0=0;
+   delay_ms(80);
+}
+
+#include"myself.h"
+
+
+void delay(uint z)
+{
+	uint x,y;
+	for(x = z; x > 0; x--)
+		for(y = 114; y > 0 ; y--);
+}
+
+
+uchar KeyScan()	//带返回值的子函数
+{
+	uchar cord_l,cord_h;//声明列线和行线的值的储存变量
+	P1= 0xf0;//1111 0000
+	if( (P1 & 0xf0) != 0xf0)//判断是否有按键按下
+	{
+		delay(5);//软件消抖
+		if( (P1 & 0xf0) != 0xf0)//判断是否有按键按下
+		{
+			  t0=0;
+			  delay_ms(10);
+			  t0=1;
+			  cord_l = P1 & 0xf0;// 储存列线值
+			  P1 = cord_l | 0x0f;
+			  cord_h = P1 & 0x0f;// 储存行线值
+			  while( (P1 & 0x0f) != 0x0f );//松手检测
+			  return (cord_l + cord_h);//返回键值码
+			  
+		}	
+	}
+		
+}
+
+void KeyPro()
+{
+	switch( KeyScan() )
+	{
+	 	//第一行键值码
+		case 0xee: m=7*28;P2 = leddata[7];		break;	  //7
+		case 0xde: m=8*28;P2 = leddata[8];		break;	  //8
+		case 0xbe: m=9*28;P2 = leddata[9];		break;	  //9
+		case 0x7e: n=0;		break;	  //k0
+		
+		//第二行键值码
+		case 0xed: m=4*28;P2 = leddata[4];		break;	   
+		case 0xdd: m=5*28;P2 = leddata[5];		break;	   
+		case 0xbd: m=6*28;P2 = leddata[6];		break;	   
+		case 0x7d: n=1;		break;	  //k1
+
+		//第三行键值码
+		case 0xeb: m=1*28;P2 = leddata[1];		break;
+		case 0xdb: m=2*28;P2 = leddata[2];		break;
+		case 0xbb: m=3*28;P2 = leddata[3];	    break;
+		case 0x7b: n=2;	break;	  //k2
+
+		//第四行键值码
+		case 0xe7: P2 = leddata[14];	break;	  //set
+		case 0xd7: P2 = leddata[0];m=0*28;	    break;
+		case 0xb7: P2 = leddata[15];	break;	  //ok
+		case 0x77: n=3;	break;	  //k3
+	}	
+}
+
+void wave()
+{
+   while(n==0)
+   {
+	 sanjiao();
+	 KeyPro();
+   }
+   while(n==1)
+   {
+	 serrate();
+	 KeyPro();
+   }
+   while(n==2)
+   {
+	 fangbo();
+	 KeyPro();
+   }
+   while(n==3)
+   {
+	 tixing();
+	 KeyPro();
+   }
+}
+
+void main()
+{
+    //t0_init();
+	P3=0xf0;
+	P2 = leddata[22];
+	while(1)
+	{
+	    
+	 	KeyPro();//提取键值码并且送不同数值给数码管显示
+		wave();
+
+	}
+}
+
+/*void time() interrupt 1
+{
+	
+   	TH0=0xfe;
+	TL0=0xfe;
+    wave();
+	
+	
+	
+} */
+
+
+
+
+
+
+
